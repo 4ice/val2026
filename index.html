@@ -355,26 +355,14 @@ function save() {
 }
 
 const VAL_SE_URL = 'https://resultat.val.se/data/resultat/val2026/RD_P.json';
+const IS_LOCAL = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 
-// Källor i tur och ordning: lokal dev-proxy, live via CORS-proxy, committad snapshot (GitHub Actions)
-async function loadData() {
-  const sources = [];
-  if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
-    sources.push({ name: 'live', url: '/api/results' });
-  }
-  sources.push({ name: 'live', url: 'https://api.allorigins.win/raw?url=' + encodeURIComponent(VAL_SE_URL) });
-  sources.push({ name: 'snapshot', url: 'data/RD_P.json' });
-  let lastErr;
-  for (const s of sources) {
-    try {
-      const res = await fetch(s.url, { cache: 'no-store', signal: AbortSignal.timeout(9000) });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const data = await res.json();
-      if (!data.rosterPaverkaMandat) throw new Error('oväntat format');
-      return { data, source: s.name };
-    } catch (err) { lastErr = err; }
-  }
-  throw lastErr || new Error('ingen datakälla svarade');
+async function fetchJson(url, timeoutMs) {
+  const res = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(timeoutMs) });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const data = await res.json();
+  if (!data.rosterPaverkaMandat) throw new Error('oväntat format');
+  return data;
 }
 
 async function fetchResults() {
@@ -383,8 +371,38 @@ async function fetchResults() {
   btn.disabled = true;
   btn.textContent = 'Hämtar …';
   errBox.style.display = 'none';
+  let applied = false;
   try {
-    const { data, source } = await loadData();
+    if (IS_LOCAL) {
+      applyData(await fetchJson('/api/results', 10000), 'live');
+      applied = true;
+    } else {
+      // Snapshot (uppdateras av GitHub Actions var 5:e minut) visas direkt;
+      // live-hämtning via CORS-proxy provas parallellt och uppgraderar om den lyckas.
+      const livePromise = fetchJson(
+        'https://api.allorigins.win/raw?url=' + encodeURIComponent(VAL_SE_URL), 9000);
+      try {
+        applyData(await fetchJson('data/RD_P.json', 10000), 'snapshot');
+        applied = true;
+      } catch {}
+      try {
+        const live = await livePromise;
+        applyData(live, 'live');
+        applied = true;
+      } catch {}
+      if (!applied) throw new Error('ingen datakälla svarade');
+    }
+  } catch (err) {
+    errBox.textContent = 'Kunde inte hämta resultat: ' + err.message;
+    errBox.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Hämta senaste resultat';
+  }
+}
+
+function applyData(data, source) {
+  {
 
     const rp = data.rosterPaverkaMandat;
     totalVotes = rp.antalRoster;
@@ -420,12 +438,6 @@ async function fetchResults() {
     state.b = state.b.filter(id => ids.has(id));
 
     render();
-  } catch (err) {
-    errBox.textContent = 'Kunde inte hämta resultat: ' + err.message;
-    errBox.style.display = 'block';
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Hämta senaste resultat';
   }
 }
 
