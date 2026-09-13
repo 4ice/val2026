@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blockjämförelse – Riksdagsvalet 2026</title>
+<style>
+  :root {
+    --bg: #10141c;
+    --panel: #1a2130;
+    --panel-2: #212a3d;
+    --text: #e8ecf4;
+    --muted: #93a0b8;
+    --border: #2e3a52;
+    --accent-a: #f15252;
+    --accent-b: #4e9af1;
+    --good: #45c777;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 20px 16px 40px;
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  header {
+    max-width: 1100px;
+    margin: 0 auto 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+  }
+  h1 { font-size: 20px; margin: 0; }
+  .meta { color: var(--muted); font-size: 13px; }
+  .meta strong { color: var(--text); font-weight: 600; }
+  .progress {
+    max-width: 1100px;
+    margin: 0 auto 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .progress .track {
+    flex: 1;
+    height: 8px;
+    border-radius: 4px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .progress .fill {
+    height: 100%;
+    width: 0%;
+    background: var(--good);
+    border-radius: 4px;
+    transition: width 0.4s;
+  }
+  .progress .label { font-size: 12px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .progress .label b { color: var(--text); }
+
+  .presets {
+    max-width: 1100px;
+    margin: 0 auto 16px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+  .presets-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 4px 10px;
+    font-size: 13px;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .chip:hover { border-color: var(--muted); }
+  .chip.active { border-color: var(--good); color: var(--good); }
+  .chip .del {
+    color: var(--muted);
+    font-weight: 700;
+    padding: 0 2px;
+    border-radius: 50%;
+  }
+  .chip .del:hover { color: #ff9b9b; }
+  #preset-name {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    color: var(--text);
+    padding: 4px 10px;
+    font-size: 13px;
+    width: 160px;
+  }
+  #preset-name:focus { outline: none; border-color: var(--muted); }
+  #preset-save {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    color: var(--text);
+    padding: 4px 12px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  #preset-save:hover { border-color: var(--good); color: var(--good); }
+  #refresh {
+    background: #4e9af1;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  #refresh:hover { filter: brightness(1.1); }
+  #refresh:disabled { opacity: 0.6; cursor: wait; }
+  #error {
+    max-width: 1100px;
+    margin: 0 auto 12px;
+    color: #ff9b9b;
+    display: none;
+  }
+
+  .scoreboard {
+    max-width: 1100px;
+    margin: 0 auto 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .score-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .score {
+    font-size: 26px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .score small { display: block; font-size: 13px; font-weight: 400; color: var(--muted); }
+  .score.b { text-align: right; }
+  #verdict { text-align: center; color: var(--muted); font-size: 14px; align-self: center; }
+  #verdict strong { color: var(--good); }
+  #verdict .votediff { font-size: 12px; margin-top: 2px; }
+  #verdict .votediff b { color: var(--text); }
+  .bar {
+    margin-top: 12px;
+    height: 14px;
+    border-radius: 7px;
+    background: var(--panel-2);
+    display: flex;
+    overflow: hidden;
+  }
+  .bar .a { background: var(--accent-a); transition: width 0.4s; }
+  .bar .b { background: var(--accent-b); transition: width 0.4s; }
+  .bar .rest { background: transparent; }
+
+  .columns {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+  }
+  @media (max-width: 800px) {
+    .columns { grid-template-columns: 1fr; }
+  }
+  .zone {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    min-height: 220px;
+  }
+  .zone.dragover { border-color: var(--good); background: #1d2a24; }
+  .zone h2 {
+    font-size: 14px;
+    margin: 0 0 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+  }
+  .zone h2[contenteditable] { color: var(--text); outline: none; border-bottom: 1px dashed transparent; }
+  .zone h2[contenteditable]:hover, .zone h2[contenteditable]:focus { border-bottom-color: var(--muted); }
+  .zone .subtotal { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+  #zone-a { border-top: 3px solid var(--accent-a); }
+  #zone-b { border-top: 3px solid var(--accent-b); }
+
+  .card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    cursor: grab;
+    user-select: none;
+  }
+  .card:active { cursor: grabbing; }
+  .card.dragging { opacity: 0.4; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+  .card .who { flex: 1; min-width: 0; }
+  .card .abbr { font-weight: 700; }
+  .card .name {
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .card .nums { text-align: right; font-variant-numeric: tabular-nums; }
+  .card .pct { font-weight: 700; }
+  .card .votes { font-size: 11px; color: var(--muted); }
+  .card .seats { font-size: 11px; font-weight: 600; color: var(--good); }
+  .card .prev { font-size: 11px; color: var(--muted); }
+  .card .diff { font-weight: 600; }
+  .card .diff.up { color: var(--good); }
+  .card .diff.down { color: #ff9b9b; }
+  .bar-wrap { position: relative; margin-top: 28px; }
+  .bar-wrap .majority {
+    position: absolute;
+    left: 50%;
+    top: -4px;
+    bottom: -4px;
+    width: 2px;
+    background: var(--muted);
+    opacity: 0.7;
+  }
+  .bar-wrap .majority-label {
+    position: absolute;
+    left: 50%;
+    top: -20px;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .badge {
+    font-size: 10px;
+    background: #5c3a1e;
+    color: #f6c896;
+    border-radius: 4px;
+    padding: 1px 5px;
+    margin-left: 6px;
+    vertical-align: 1px;
+  }
+  .hint { color: var(--muted); font-size: 12px; text-align: center; padding: 20px 8px; }
+  footer {
+    max-width: 1100px;
+    margin: 20px auto 0;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  footer a { color: #4e9af1; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Blockjämförelse – Riksdagsvalet 2026</h1>
+    <div class="meta" id="meta">Hämtar resultat …</div>
+  </div>
+  <button id="refresh">Hämta senaste resultat</button>
+</header>
+
+<div class="progress">
+  <div class="track"><div class="fill" id="progress-fill"></div></div>
+  <div class="label" id="progress-label"></div>
+</div>
+
+<div class="presets">
+  <span class="presets-label">Presets</span>
+  <span id="preset-chips" style="display:contents"></span>
+  <input id="preset-name" placeholder="Namn på nuvarande setup" maxlength="40">
+  <button id="preset-save">Spara preset</button>
+</div>
+
+<div id="error"></div>
+
+<div class="scoreboard">
+  <div class="score-row">
+    <div class="score a" id="score-a">–<small id="score-a-sub"></small></div>
+    <div id="verdict"></div>
+    <div class="score b" id="score-b">–<small id="score-b-sub"></small></div>
+  </div>
+  <div class="bar-wrap">
+    <div class="majority-label">175 mandat</div>
+    <div class="bar">
+      <div class="a" id="bar-a" style="width:0%"></div>
+      <div class="rest" style="flex:1"></div>
+      <div class="b" id="bar-b" style="width:0%"></div>
+    </div>
+    <div class="majority"></div>
+  </div>
+</div>
+
+<div class="columns">
+  <div class="zone" id="zone-a" data-zone="a">
+    <h2 contenteditable="true" spellcheck="false" id="name-a">Block A</h2>
+    <div class="subtotal" id="sub-a"></div>
+    <div class="cards"></div>
+  </div>
+  <div class="zone" id="zone-pool" data-zone="pool">
+    <h2>Partier</h2>
+    <div class="subtotal">Dra partier till ett block</div>
+    <div class="cards"></div>
+  </div>
+  <div class="zone" id="zone-b" data-zone="b">
+    <h2 contenteditable="true" spellcheck="false" id="name-b">Block B</h2>
+    <div class="subtotal" id="sub-b"></div>
+    <div class="cards"></div>
+  </div>
+</div>
+
+<footer>
+  Preliminärt resultat från <a href="https://resultat.val.se/val2026/RD?r=P" target="_blank" rel="noopener">val.se</a>.
+  Procent avser andel av röster som påverkar mandatfördelningen. Partier under 4 % klarar inte riksdagsspärren.
+  Mandaten är en förenklad beräkning (jämkade uddatalsmetoden på riksnivå, 349 mandat, 4 %-spärr) –
+  den officiella fördelningen per valkrets publiceras av val.se senare.
+</footer>
+
+<script>
+const STORAGE_KEY = 'val2026-block-tool';
+const fmt = new Intl.NumberFormat('sv-SE');
+
+let parties = [];        // [{id, abbr, name, color, votes, pct}]
+let totalVotes = 0;
+let state = { a: [], b: [], nameA: 'Block A', nameB: 'Block B', presets: [] };
+
+try {
+  const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+  if (saved && Array.isArray(saved.a) && Array.isArray(saved.b)) {
+    state = { ...state, ...saved };
+  }
+} catch {}
+
+function save() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+}
+
+const VAL_SE_URL = 'https://resultat.val.se/data/resultat/val2026/RD_P.json';
+
+// Källor i tur och ordning: lokal dev-proxy, live via CORS-proxy, committad snapshot (GitHub Actions)
+async function loadData() {
+  const sources = [];
+  if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+    sources.push({ name: 'live', url: '/api/results' });
+  }
+  sources.push({ name: 'live', url: 'https://api.allorigins.win/raw?url=' + encodeURIComponent(VAL_SE_URL) });
+  sources.push({ name: 'snapshot', url: 'data/RD_P.json' });
+  let lastErr;
+  for (const s of sources) {
+    try {
+      const res = await fetch(s.url, { cache: 'no-store', signal: AbortSignal.timeout(9000) });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      if (!data.rosterPaverkaMandat) throw new Error('oväntat format');
+      return { data, source: s.name };
+    } catch (err) { lastErr = err; }
+  }
+  throw lastErr || new Error('ingen datakälla svarade');
+}
+
+async function fetchResults() {
+  const btn = document.getElementById('refresh');
+  const errBox = document.getElementById('error');
+  btn.disabled = true;
+  btn.textContent = 'Hämtar …';
+  errBox.style.display = 'none';
+  try {
+    const { data, source } = await loadData();
+
+    const rp = data.rosterPaverkaMandat;
+    totalVotes = rp.antalRoster;
+    parties = rp.partiroster.map(p => ({
+      id: p.partikod || p.partiforkortning || p.partibeteckning,
+      abbr: p.partiforkortning || 'ÖVR',
+      name: p.partibeteckning,
+      color: p.fargkod || '#888',
+      votes: p.antalRoster,
+      pct: p.andelRoster,
+      pct2022: p.andelRosterForegaendeVal,
+      diff: p.forandringAndelRoster ?? (p.andelRosterForegaendeVal != null ? p.andelRoster - p.andelRosterForegaendeVal : null),
+      isAggregate: !p.partikod,
+      seats: 0,
+    }));
+    computeSeats();
+
+    const counted = data.antalValdistriktRaknade;
+    const total = data.antalValdistriktSomSkaRaknas;
+    const countedPct = total ? 100 * counted / total : 0;
+    document.getElementById('meta').innerHTML =
+      `<strong>${fmt.format(counted)}</strong> av ${fmt.format(total)} valdistrikt räknade` +
+      ` (${countedPct.toFixed(1).replace('.', ',')} %) · Uppdaterat ${data.senasteUppdateringstid}` +
+      ` · Valdeltagande ${data.valdeltagande}` +
+      (source === 'snapshot' ? ' · <em>snapshot, kan släpa några minuter</em>' : '');
+    document.getElementById('progress-fill').style.width = countedPct + '%';
+    document.getElementById('progress-label').innerHTML =
+      `<b>${countedPct.toFixed(1).replace('.', ',')} %</b> räknat · ${fmt.format(total - counted)} distrikt kvar`;
+
+    // Drop assignments for parties that no longer exist in the feed
+    const ids = new Set(parties.map(p => p.id));
+    state.a = state.a.filter(id => ids.has(id));
+    state.b = state.b.filter(id => ids.has(id));
+
+    render();
+  } catch (err) {
+    errBox.textContent = 'Kunde inte hämta resultat: ' + err.message;
+    errBox.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Hämta senaste resultat';
+  }
+}
+
+// Jämkade uddatalsmetoden (modifierad Sainte-Laguë) på riksnivå:
+// 349 mandat, 4 %-spärr, första divisor 1,2 och därefter 3, 5, 7 …
+// En förenklad prognos tills val.se publicerar den officiella fördelningen.
+const TOTAL_SEATS = 349;
+
+// Officiell mandatfördelning i riksdagsvalet 2022 (finns inte i val.se-flödet)
+const SEATS_2022 = { S: 107, SD: 73, M: 68, V: 24, C: 24, KD: 19, MP: 18, L: 16 };
+function computeSeats() {
+  parties.forEach(p => { p.seats = 0; });
+  const eligible = parties.filter(p => !p.isAggregate && totalVotes > 0 && p.votes / totalVotes >= 0.04);
+  if (eligible.length === 0) return;
+  for (let i = 0; i < TOTAL_SEATS; i++) {
+    let best = null, bestQ = -1;
+    for (const p of eligible) {
+      const divisor = p.seats === 0 ? 1.2 : 2 * p.seats + 1;
+      const q = p.votes / divisor;
+      if (q > bestQ) { bestQ = q; best = p; }
+    }
+    best.seats++;
+  }
+}
+
+function cardFor(p) {
+  const el = document.createElement('div');
+  el.className = 'card';
+  el.draggable = true;
+  el.dataset.id = p.id;
+  const under = p.pct < 4 ? '<span class="badge">under 4 %</span>' : '';
+  let prev = '';
+  if (p.pct2022 != null) {
+    let diffHtml = '';
+    if (p.diff != null) {
+      const cls = p.diff > 0 ? 'up' : p.diff < 0 ? 'down' : '';
+      const sign = p.diff > 0 ? '+' : p.diff < 0 ? '−' : '±';
+      diffHtml = ` <span class="diff ${cls}">${sign}${Math.abs(p.diff).toFixed(1).replace('.', ',')}</span>`;
+    }
+    const seats2022 = SEATS_2022[p.abbr];
+    const seatsPart = seats2022 != null ? ` · ${seats2022} mandat` : '';
+    prev = `<div class="prev">2022: ${p.pct2022.toFixed(1).replace('.', ',')} %${diffHtml}${seatsPart}</div>`;
+  }
+  let seatsLine = '';
+  if (p.seats > 0) {
+    const s22 = SEATS_2022[p.abbr];
+    let seatDiff = '';
+    if (s22 != null && p.seats !== s22) {
+      const d = p.seats - s22;
+      seatDiff = ` <span class="diff ${d > 0 ? 'up' : 'down'}">${d > 0 ? '+' : '−'}${Math.abs(d)}</span>`;
+    }
+    seatsLine = `<div class="seats">${p.seats} mandat${seatDiff}</div>`;
+  }
+  el.innerHTML = `
+    <span class="dot" style="background:${p.color}"></span>
+    <span class="who">
+      <span class="abbr">${p.abbr}</span>${under}
+      <div class="name">${p.name}</div>
+    </span>
+    <span class="nums">
+      <div class="pct">${p.pct.toFixed(1).replace('.', ',')} %</div>
+      <div class="votes">${fmt.format(p.votes)}</div>
+      ${seatsLine}
+      ${prev}
+    </span>`;
+  el.addEventListener('dragstart', e => {
+    e.dataTransfer.setData('text/plain', p.id);
+    e.dataTransfer.effectAllowed = 'move';
+    el.classList.add('dragging');
+  });
+  el.addEventListener('dragend', () => el.classList.remove('dragging'));
+  return el;
+}
+
+function render() {
+  const byId = Object.fromEntries(parties.map(p => [p.id, p]));
+  const inA = state.a.map(id => byId[id]).filter(Boolean);
+  const inB = state.b.map(id => byId[id]).filter(Boolean);
+  const assigned = new Set([...state.a, ...state.b]);
+  const pool = parties.filter(p => !assigned.has(p.id));
+
+  for (const [zone, list] of [['a', inA], ['pool', pool], ['b', inB]]) {
+    const holder = document.querySelector(`#zone-${zone} .cards`);
+    holder.innerHTML = '';
+    if (list.length === 0) {
+      holder.innerHTML = `<div class="hint">${zone === 'pool' ? 'Alla partier är placerade' : 'Släpp partier här'}</div>`;
+    }
+    list.forEach(p => holder.appendChild(cardFor(p)));
+  }
+
+  const sumVotes = list => list.reduce((s, p) => s + p.votes, 0);
+  const sumSeats = list => list.reduce((s, p) => s + p.seats, 0);
+  const votesA = sumVotes(inA), votesB = sumVotes(inB);
+  const seatsA = sumSeats(inA), seatsB = sumSeats(inB);
+  const pctA = totalVotes ? 100 * votesA / totalVotes : 0;
+  const pctB = totalVotes ? 100 * votesB / totalVotes : 0;
+  const pctStr = v => v.toFixed(1).replace('.', ',') + ' %';
+
+  document.getElementById('name-a').textContent = state.nameA;
+  document.getElementById('name-b').textContent = state.nameB;
+  document.getElementById('score-a').firstChild.textContent = `${seatsA} mandat`;
+  document.getElementById('score-b').firstChild.textContent = `${seatsB} mandat`;
+  document.getElementById('score-a-sub').textContent = `${state.nameA} · ${fmt.format(votesA)} röster · ${pctStr(pctA)}`;
+  document.getElementById('score-b-sub').textContent = `${state.nameB} · ${fmt.format(votesB)} röster · ${pctStr(pctB)}`;
+  document.getElementById('sub-a').textContent = `${inA.length} partier · ${seatsA} mandat · ${fmt.format(votesA)} röster · ${pctStr(pctA)}`;
+  document.getElementById('sub-b').textContent = `${inB.length} partier · ${seatsB} mandat · ${fmt.format(votesB)} röster · ${pctStr(pctB)}`;
+  document.getElementById('bar-a').style.width = (100 * seatsA / TOTAL_SEATS) + '%';
+  document.getElementById('bar-b').style.width = (100 * seatsB / TOTAL_SEATS) + '%';
+
+  const verdict = document.getElementById('verdict');
+  if (votesA === 0 && votesB === 0) {
+    verdict.innerHTML = 'Dra partier till blocken för att jämföra';
+  } else if (seatsA !== seatsB) {
+    const lead = seatsA > seatsB ? state.nameA : state.nameB;
+    const leadSeats = Math.max(seatsA, seatsB);
+    const majority = leadSeats >= 175 ? ' · egen majoritet' : '';
+    const voteLead = votesA > votesB ? state.nameA : state.nameB;
+    const voteDiff = Math.abs(votesA - votesB);
+    const votediff = voteDiff === 0 ? '' :
+      `<div class="votediff">${voteLead} har <b>${fmt.format(voteDiff)}</b> fler röster (${pctStr(Math.abs(pctA - pctB))})</div>`;
+    verdict.innerHTML = `<strong>${lead}</strong> leder med ${Math.abs(seatsA - seatsB)} mandat${majority}${votediff}`;
+  } else if (votesA !== votesB) {
+    const lead = votesA > votesB ? state.nameA : state.nameB;
+    verdict.innerHTML = `Lika många mandat – <strong>${lead}</strong> har ${fmt.format(Math.abs(votesA - votesB))} fler röster`;
+  } else {
+    verdict.innerHTML = 'Helt jämnt!';
+  }
+
+  renderPresets();
+}
+
+function sameSetup(preset) {
+  const eq = (x, y) => x.length === y.length && [...x].sort().every((v, i) => v === [...y].sort()[i]);
+  return eq(preset.a, state.a) && eq(preset.b, state.b);
+}
+
+function renderPresets() {
+  const holder = document.getElementById('preset-chips');
+  holder.innerHTML = '';
+  if (!Array.isArray(state.presets)) state.presets = [];
+  for (const preset of state.presets) {
+    const chip = document.createElement('span');
+    chip.className = 'chip' + (sameSetup(preset) ? ' active' : '');
+    const label = document.createElement('span');
+    label.textContent = preset.name;
+    const del = document.createElement('span');
+    del.className = 'del';
+    del.textContent = '×';
+    del.title = 'Ta bort preset';
+    chip.append(label, del);
+    chip.addEventListener('click', e => {
+      if (e.target === del) {
+        state.presets = state.presets.filter(p => p !== preset);
+      } else {
+        state.a = [...preset.a];
+        state.b = [...preset.b];
+        state.nameA = preset.nameA;
+        state.nameB = preset.nameB;
+      }
+      save();
+      render();
+    });
+    holder.appendChild(chip);
+  }
+}
+
+function savePreset() {
+  const input = document.getElementById('preset-name');
+  const name = input.value.trim() || `${state.nameA} vs ${state.nameB}`;
+  if (!Array.isArray(state.presets)) state.presets = [];
+  const preset = { name, a: [...state.a], b: [...state.b], nameA: state.nameA, nameB: state.nameB };
+  const existing = state.presets.findIndex(p => p.name === name);
+  if (existing >= 0) state.presets[existing] = preset;
+  else state.presets.push(preset);
+  input.value = '';
+  save();
+  renderPresets();
+}
+
+// Drag & drop zones
+document.querySelectorAll('.zone').forEach(zone => {
+  zone.addEventListener('dragover', e => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    zone.classList.add('dragover');
+  });
+  zone.addEventListener('dragleave', e => {
+    if (!zone.contains(e.relatedTarget)) zone.classList.remove('dragover');
+  });
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('dragover');
+    const id = e.dataTransfer.getData('text/plain');
+    if (!id) return;
+    state.a = state.a.filter(x => x !== id);
+    state.b = state.b.filter(x => x !== id);
+    const target = zone.dataset.zone;
+    if (target === 'a') state.a.push(id);
+    if (target === 'b') state.b.push(id);
+    save();
+    render();
+  });
+});
+
+// Editable block names
+for (const [el, key] of [[document.getElementById('name-a'), 'nameA'], [document.getElementById('name-b'), 'nameB']]) {
+  el.addEventListener('blur', () => {
+    state[key] = el.textContent.trim() || (key === 'nameA' ? 'Block A' : 'Block B');
+    save();
+    render();
+  });
+  el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); el.blur(); } });
+}
+
+document.getElementById('refresh').addEventListener('click', fetchResults);
+document.getElementById('preset-save').addEventListener('click', savePreset);
+document.getElementById('preset-name').addEventListener('keydown', e => {
+  if (e.key === 'Enter') savePreset();
+});
+fetchResults();
+</script>
+</body>
+</html>
